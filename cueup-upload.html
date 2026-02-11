@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Upload Script — CueUp</title>
+  <link href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --page-bg: #f4f1ea;
+      --page: #fffef8;
+      --text: #1a1816;
+      --text-light: #6a6560;
+      --accent: #c92a2a;
+      --border: #d4cfc5;
+      --shadow: rgba(0,0,0,0.08);
+      --success: #2f9e44;
+    }
+
+    body.dark {
+      --page-bg: #1a1816;
+      --page: #252320;
+      --text: #e8e6e0;
+      --text-light: #a8a6a0;
+      --accent: #ff4d4d;
+      --border: #3a3835;
+      --shadow: rgba(0,0,0,0.3);
+      --success: #51cf66;
+    }
+
+    body {
+      font-family: 'Courier Prime', monospace;
+      font-size: 12pt;
+      background: var(--page-bg);
+      color: var(--text);
+      transition: all 0.3s ease;
+    }
+
+    /* Top nav */
+    .nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      background: var(--page);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 48px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 100;
+      box-shadow: 0 2px 8px var(--shadow);
+    }
+
+    .logo {
+      font-weight: bold;
+      font-size: 14pt;
+      letter-spacing: 0.15em;
+      text-decoration: none;
+      color: var(--text);
+    }
+
+    .nav-right {
+      display: flex;
+      gap: 20px;
+      align-items: center;
+    }
+
+    .theme-btn {
+      padding: 6px 14px;
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      font-size: 8pt;
+      background: none;
+      color: var(--text-light);
+      font-family: 'Courier Prime', monospace;
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .theme-btn:hover {
+      color: var(--text);
+      border-color: var(--text);
+    }
+
+    /* Main container */
+    .container {
+      padding-top: 80px;
+      min-height: 100vh;
+      display: flex;
+    }
+
+    /* Left side - script preview */
+    .script-side {
+      flex: 1;
+      background: var(--page);
+      padding: 48px;
+      border-right: 2px solid var(--border);
+      position: relative;
+      overflow-y: auto;
+    }
+
+    .script-holes {
+      position: absolute;
+      left: 24px;
+      top: 100px;
+      display: flex;
+      flex-direction: column;
+      gap: 80px;
+    }
+
+    .hole {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--page-bg);
+      border: 1.5px solid var(--border);
+      box-shadow: inset 0 1px 3px rgba(0,0,0,0.2);
+    }
+
+    .page-num {
+      position: absolute;
+      top: 24px;
+      right: 48px;
+      font-size: 11pt;
+      color: var(--text-light);
+    }
+
+    .page-num::after {
+      content: '.';
+    }
+
+    .scene-heading {
+      font-weight: bold;
+      text-transform: uppercase;
+      margin: 2em 0 1em 0;
+      letter-spacing: 0.05em;
+      font-size: 11pt;
+    }
+
+    .action {
+      margin: 1em 0;
+      line-height: 1.6;
+      color: var(--text-light);
+      font-size: 11pt;
+    }
+
+    .script-placeholder {
+      margin: 4em 0;
+      padding: 3em;
+      border: 2px dashed var(--border);
+      text-align: center;
+      color: var(--text-light);
+      font-size: 11pt;
+      line-height: 1.8;
+    }
+
+    .script-preview {
+      margin-top: 2em;
+      font-size: 11pt;
+      line-height: 1.6;
+    }
+
+    .character {
+      font-weight: bold;
+      text-transform: uppercase;
+      margin: 1.5em 0 0 2.5in;
+      letter-spacing: 0.08em;
+      font-size: 10pt;
+    }
+
+    .dialogue {
+      margin: 0.3em 0 1em 1.5in;
+      max-width: 3.5in;
+      font-size: 11pt;
+    }
+
+    /* Right side - controls */
+    .controls-side {
+      width: 480px;
+      background: var(--page-bg);
+      padding: 48px 40px;
+      overflow-y: auto;
+    }
+
+    .step-indicator {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 32px;
+      font-size: 9pt;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-light);
+    }
+
+    .step {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .step-num {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      border: 2px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 9pt;
+      font-weight: bold;
+    }
+
+    .step.active .step-num {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+
+    .step.active {
+      color: var(--text);
+    }
+
+    .step-divider {
+      width: 24px;
+      height: 1px;
+      background: var(--border);
+    }
+
+    .controls-title {
+      font-size: 16pt;
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 12px;
+    }
+
+    .controls-subtitle {
+      font-size: 10pt;
+      color: var(--text-light);
+      line-height: 1.6;
+      margin-bottom: 32px;
+    }
+
+    /* Upload zone */
+    .upload-zone {
+      border: 2px dashed var(--border);
+      padding: 48px 32px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-bottom: 24px;
+      position: relative;
+    }
+
+    .upload-zone:hover {
+      border-color: var(--accent);
+      background: var(--page);
+    }
+
+    .upload-zone.dragover {
+      border-color: var(--accent);
+      background: var(--page);
+      border-style: solid;
+    }
+
+    .upload-icon {
+      font-size: 32pt;
+      margin-bottom: 16px;
+      color: var(--text-light);
+    }
+
+    .upload-text {
+      font-size: 11pt;
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 8px;
+    }
+
+    .upload-hint {
+      font-size: 9pt;
+      color: var(--text-light);
+      line-height: 1.6;
+    }
+
+    .file-input {
+      display: none;
+    }
+
+    .divider {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin: 24px 0;
+      font-size: 8pt;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-light);
+    }
+
+    .divider::before,
+    .divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    /* Text input */
+    .textarea-container {
+      margin-bottom: 24px;
+    }
+
+    .textarea-label {
+      display: block;
+      font-size: 9pt;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-light);
+      margin-bottom: 12px;
+      font-weight: bold;
+    }
+
+    .textarea {
+      width: 100%;
+      min-height: 200px;
+      padding: 16px;
+      border: 2px solid var(--border);
+      background: var(--page);
+      font-family: 'Courier Prime', monospace;
+      font-size: 10pt;
+      color: var(--text);
+      resize: vertical;
+      line-height: 1.6;
+    }
+
+    .textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+
+    /* Buttons */
+    .btn {
+      width: 100%;
+      padding: 14px;
+      border: 2px solid var(--text);
+      background: transparent;
+      color: var(--text);
+      font-family: 'Courier Prime', monospace;
+      font-size: 10pt;
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-bottom: 12px;
+    }
+
+    .btn:hover {
+      background: var(--text);
+      color: var(--page);
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+
+    .btn-primary:hover {
+      background: #a81f1f;
+      border-color: #a81f1f;
+    }
+
+    .btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .btn:disabled:hover {
+      background: transparent;
+      color: var(--text);
+    }
+
+    .btn-primary:disabled:hover {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    /* File info */
+    .file-info {
+      padding: 16px;
+      background: var(--page);
+      border: 1px solid var(--border);
+      margin-bottom: 24px;
+      display: none;
+    }
+
+    .file-info.show {
+      display: block;
+    }
+
+    .file-name {
+      font-weight: bold;
+      font-size: 10pt;
+      margin-bottom: 8px;
+      word-break: break-all;
+    }
+
+    .file-meta {
+      font-size: 9pt;
+      color: var(--text-light);
+    }
+
+    .file-remove {
+      margin-top: 12px;
+      font-size: 9pt;
+      color: var(--accent);
+      text-decoration: underline;
+      cursor: pointer;
+      display: inline-block;
+    }
+
+    .file-remove:hover {
+      color: #a81f1f;
+    }
+
+    /* Progress */
+    .progress-container {
+      margin: 24px 0;
+      display: none;
+    }
+
+    .progress-container.show {
+      display: block;
+    }
+
+    .progress-label {
+      font-size: 9pt;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-light);
+      margin-bottom: 8px;
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 8px;
+      background: var(--border);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: var(--success);
+      width: 0%;
+      transition: width 0.3s ease;
+    }
+
+    /* Responsive */
+    @media (max-width: 1024px) {
+      .container {
+        flex-direction: column;
+      }
+
+      .script-side {
+        border-right: none;
+        border-bottom: 2px solid var(--border);
+        min-height: 400px;
+      }
+
+      .controls-side {
+        width: 100%;
+      }
+
+      .script-holes {
+        display: none;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .nav {
+        padding: 12px 24px;
+      }
+
+      .script-side,
+      .controls-side {
+        padding: 24px;
+      }
+
+      .character {
+        margin-left: 1in;
+      }
+
+      .dialogue {
+        margin-left: 0.5in;
+        max-width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Navigation -->
+  <nav class="nav">
+    <a href="cueup-landing.html" class="logo">CUEUP</a>
+    <div class="nav-right">
+      <button class="theme-btn" onclick="toggleTheme()">[DARK MODE]</button>
+    </div>
+  </nav>
+
+  <!-- Main container -->
+  <div class="container">
+    
+    <!-- Left: Script preview -->
+    <div class="script-side">
+      <div class="script-holes">
+        <div class="hole"></div>
+        <div class="hole"></div>
+        <div class="hole"></div>
+      </div>
+
+      <div class="page-num">1</div>
+
+      <div class="scene-heading">SCRIPT PREVIEW</div>
+
+      <div class="script-placeholder" id="placeholder">
+        Upload your sides or paste your script to see a preview here.
+        <br><br>
+        CueUp will parse the formatting and detect character names automatically.
+      </div>
+
+      <div class="script-preview" id="scriptPreview" style="display:none;">
+        <!-- Parsed script will appear here -->
+      </div>
+    </div>
+
+    <!-- Right: Controls -->
+    <div class="controls-side">
+      
+      <!-- Step indicator -->
+      <div class="step-indicator">
+        <div class="step active">
+          <div class="step-num">1</div>
+          <span>Upload</span>
+        </div>
+        <div class="step-divider"></div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <span>Label</span>
+        </div>
+        <div class="step-divider"></div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <span>Voices</span>
+        </div>
+      </div>
+
+      <div class="controls-title">Upload Script</div>
+      <div class="controls-subtitle">
+        Drop in your sides as a PDF or paste the text directly. CueUp will detect characters and format everything for you.
+      </div>
+
+      <!-- Upload zone -->
+      <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()">
+        <div class="upload-icon">📄</div>
+        <div class="upload-text">Drop PDF here or click to browse</div>
+        <div class="upload-hint">Supports .pdf files up to 10MB</div>
+      </div>
+
+      <input type="file" id="fileInput" class="file-input" accept=".pdf" onchange="handleFileSelect(event)" />
+
+      <!-- File info (hidden initially) -->
+      <div class="file-info" id="fileInfo">
+        <div class="file-name" id="fileName"></div>
+        <div class="file-meta" id="fileMeta"></div>
+        <span class="file-remove" onclick="removeFile()">Remove file</span>
+      </div>
+
+      <!-- Progress bar -->
+      <div class="progress-container" id="progressContainer">
+        <div class="progress-label">Parsing script...</div>
+        <div class="progress-bar">
+          <div class="progress-fill" id="progressFill"></div>
+        </div>
+      </div>
+
+      <div class="divider">or paste text</div>
+
+      <!-- Text area -->
+      <div class="textarea-container">
+        <label class="textarea-label">Paste Script Text</label>
+        <textarea 
+          class="textarea" 
+          id="scriptText"
+          placeholder="INT. COFFEE SHOP - DAY&#10;&#10;SARAH sits across from MIKE..."></textarea>
+      </div>
+
+      <!-- Action buttons -->
+      <button class="btn btn-primary" id="parseBtn" onclick="parseScript()">Parse Script</button>
+      <button class="btn" id="nextBtn" onclick="nextStep()" disabled>Continue to Label Lines →</button>
+
+    </div>
+
+  </div>
+
+  <script>
+    let uploadedFile = null;
+    let parsedScript = null;
+
+    function toggleTheme() {
+      const isDark = document.body.classList.toggle('dark');
+      const btn = document.querySelector('.theme-btn');
+      btn.textContent = isDark ? '[LIGHT MODE]' : '[DARK MODE]';
+    }
+
+    // Drag and drop
+    const uploadZone = document.getElementById('uploadZone');
+
+    uploadZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      uploadZone.classList.add('dragover');
+    });
+
+    uploadZone.addEventListener('dragleave', () => {
+      uploadZone.classList.remove('dragover');
+    });
+
+    uploadZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      uploadZone.classList.remove('dragover');
+      const files = e.dataTransfer.files;
+      if (files.length > 0 && files[0].type === 'application/pdf') {
+        handleFile(files[0]);
+      }
+    });
+
+    function handleFileSelect(event) {
+      const file = event.target.files[0];
+      if (file) {
+        handleFile(file);
+      }
+    }
+
+    function handleFile(file) {
+      uploadedFile = file;
+      
+      // Show file info
+      document.getElementById('fileName').textContent = file.name;
+      document.getElementById('fileMeta').textContent = `${(file.size / 1024).toFixed(1)} KB • PDF`;
+      document.getElementById('fileInfo').classList.add('show');
+
+      // Clear textarea
+      document.getElementById('scriptText').value = '';
+
+      // Enable parse button
+      document.getElementById('parseBtn').disabled = false;
+    }
+
+    function removeFile() {
+      uploadedFile = null;
+      document.getElementById('fileInfo').classList.remove('show');
+      document.getElementById('fileInput').value = '';
+      checkParseButton();
+    }
+
+    // Check if parse button should be enabled
+    document.getElementById('scriptText').addEventListener('input', checkParseButton);
+
+    function checkParseButton() {
+      const hasFile = uploadedFile !== null;
+      const hasText = document.getElementById('scriptText').value.trim().length > 0;
+      document.getElementById('parseBtn').disabled = !(hasFile || hasText);
+    }
+
+    function parseScript() {
+      const scriptText = document.getElementById('scriptText').value.trim();
+      
+      if (!uploadedFile && !scriptText) {
+        alert('Please upload a PDF or paste script text first.');
+        return;
+      }
+
+      // Show progress
+      document.getElementById('progressContainer').classList.add('show');
+      
+      // Simulate parsing progress
+      let progress = 0;
+      const progressFill = document.getElementById('progressFill');
+      
+      const interval = setInterval(() => {
+        progress += 10;
+        progressFill.style.width = progress + '%';
+        
+        if (progress >= 100) {
+          clearInterval(interval);
+          setTimeout(() => {
+            document.getElementById('progressContainer').classList.remove('show');
+            showParsedScript(scriptText || 'Uploaded PDF content would be extracted here...');
+          }, 300);
+        }
+      }, 150);
+    }
+
+    function showParsedScript(text) {
+      // Mock parse - in real app, this would call backend
+      parsedScript = {
+        text: text,
+        characters: ['SARAH', 'MIKE', 'BARISTA'],
+        lines: [
+          { type: 'scene', text: 'INT. COFFEE SHOP - DAY' },
+          { type: 'action', text: 'SARAH sits across from MIKE, both nursing their drinks.' },
+          { type: 'character', name: 'SARAH' },
+          { type: 'dialogue', text: 'So you really think this app will work?' },
+          { type: 'character', name: 'MIKE' },
+          { type: 'dialogue', text: 'CueUp? Absolutely. No more begging friends to read lines.' },
+          { type: 'character', name: 'SARAH' },
+          { type: 'dialogue', text: 'I\'ll believe it when I see it.' },
+        ]
+      };
+
+      // Hide placeholder
+      document.getElementById('placeholder').style.display = 'none';
+      
+      // Show preview
+      const preview = document.getElementById('scriptPreview');
+      preview.style.display = 'block';
+      
+      let html = '';
+      parsedScript.lines.forEach(line => {
+        if (line.type === 'scene') {
+          html += `<div class="scene-heading">${line.text}</div>`;
+        } else if (line.type === 'action') {
+          html += `<div class="action">${line.text}</div>`;
+        } else if (line.type === 'character') {
+          html += `<div class="character">${line.name}</div>`;
+        } else if (line.type === 'dialogue') {
+          html += `<div class="dialogue">${line.text}</div>`;
+        }
+      });
+      
+      preview.innerHTML = html;
+
+      // Enable next button
+      document.getElementById('nextBtn').disabled = false;
+    }
+
+    function nextStep() {
+      if (!parsedScript) {
+        alert('Please parse a script first.');
+        return;
+      }
+      
+      // Store parsed data and move to next screen
+      localStorage.setItem('parsedScript', JSON.stringify(parsedScript));
+      window.location.href = 'cueup-label.html';
+    }
+  </script>
+
+</body>
+</html>
